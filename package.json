@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "playwright": "^1.55.1",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "ethers": "^6.15.0"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "MD013": {
+    "line_length": 120,
+    "code_blocks": false,
+    "tables": false
+  },
+  "MD033": {
+    "allowed_elements": [
+      "workflow",
+      "conditional",
+      "if",
+      "then",
+      "else",
+      "parallel",
+      "task",
+      "if_not_exists",
+      "if_occupied",
+      "on_failure",
+      "loop",
+      "on_success",
+      "agent",
+      "switch",
+      "case",
+      "sequential",
+      "focus",
+      "default",
+      "monitor",
+      "foreach",
+      "early_return",
+      "error_recovery"
+    ]
+  },
+  "MD041": false
+}

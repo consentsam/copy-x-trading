@@ -1,0 +1,34 @@
+# macOS
+.DS_Store
+
+# Nested git repositories are now managed as submodules
+
+# Node modules
+node_modules/
+
+# Spec-kit folder (contains separate git repository)
+local-working-project-folder/spec-kit/
+local-working-project-folder/spec-kit-updated-with-analyse-clarify/
+local-working-project-folder/updated-github-spec-kit/
+
+# Local working folder for documentation and testing
+local-working-project-folder/testing/
+
+
+# Playwright MCP server files and screenshots
+.playwright-mcp/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.webp
+*.svg
+# .claude/commands/ should be tracked for project slash commands
+# Only ignore cache and temp files in .claude
+.claude/cache/
+.claude/logs/
+.claude/tmp/
+logs/
+.claude
+.specify
