@@ -1,0 +1,30 @@
+// @ts-nocheck
+import { pgTable, text, timestamp, boolean, jsonb, pgEnum } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+
+// Create enum for trade status
+export const tradeStatusEnum = pgEnum("trade_status", ["pending", "executed", "rejected", "expired"]);
+
+export const tradeConfirmationsTable = pgTable("protocol_trade_confirmations", {
+  confirmationId: text("confirmation_id").primaryKey().default(sql`gen_random_uuid()`),
+  strategyId: text("strategy_id").notNull(),
+  alphaConsumerAddress: text("alpha_consumer_address").notNull(),
+  alphaGeneratorAddress: text("alpha_generator_address").notNull(),
+  executionParams: jsonb("execution_params"),
+  gasEstimate: text("gas_estimate"),
+  status: tradeStatusEnum("status").default("pending").notNull(),
+  expiryTime: timestamp("expiry_time", { withTimezone: true }).notNull(),
+  metadata: jsonb("metadata").default(sql`'{}'::jsonb`),
+  isExecuted: boolean("is_executed").default(false).notNull(),
+  executionTxHash: text("execution_tx_hash"),
+  // New fields for protocol-specific execution
+  functionName: text("function_name"),
+  functionABI: jsonb("function_abi"),
+  parameters: jsonb("parameters"),
+  contractAddress: text("contract_address"),
+  createdAt: timestamp("created_at", { withTimezone: true }).default(sql`now()`).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).default(sql`now()`).notNull(),
+});
+
+export type TradeConfirmation = typeof tradeConfirmationsTable.$inferSelect;
+export type NewTradeConfirmation = typeof tradeConfirmationsTable.$inferInsert;
