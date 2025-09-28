@@ -274,6 +274,24 @@ export default function TradeExecutionModal({
     }
   }, [availableProtocols, selectedProtocol, strategy?.strategyJSON?.protocols]);
 
+  // Auto-populate onBehalfOf parameter when function changes
+  useEffect(() => {
+    if (selectedFunction && address) {
+      // Check if this is an AAVE function with onBehalfOf parameter
+      const functionFromRoot = strategy?.functions?.find(
+        (f: any) => f.functionName === selectedFunction
+      );
+
+      if (functionFromRoot?.requiredParams?.includes('onBehalfOf')) {
+        // Auto-populate onBehalfOf with the current wallet address
+        setParameters(prevParams => ({
+          ...prevParams,
+          onBehalfOf: address
+        }));
+      }
+    }
+  }, [selectedFunction, address, strategy?.functions]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -413,6 +431,7 @@ export default function TradeExecutionModal({
                   value={selectedFunction}
                   onChange={(e) => {
                     setSelectedFunction(e.target.value);
+                    // Reset parameters but will be re-populated by useEffect for onBehalfOf
                     setParameters({});
                   }}
                   disabled={submitting}
@@ -464,23 +483,38 @@ export default function TradeExecutionModal({
 
                   if (functionFromRoot?.requiredParams && functionFromRoot.requiredParams.length > 0) {
                     // Display input fields for each required parameter
-                    return functionFromRoot.requiredParams.map((param: string) => (
-                      <div key={param} style={{ marginBottom: '12px' }}>
-                        <Label>{param.replace(/([A-Z])/g, ' $1').trim()}</Label>
-                        <Input
-                          type="text"
-                          value={parameters[param] || ''}
-                          onChange={(e) => setParameters({...parameters, [param]: e.target.value})}
-                          placeholder={`Enter ${param}`}
-                          disabled={submitting}
-                        />
-                        <HelpText>
-                          {functionFromRoot.modifiableParams?.includes(param)
-                            ? 'Modifiable parameter - AlphaConsumers can change this'
-                            : 'Required parameter'}
-                        </HelpText>
-                      </div>
-                    ));
+                    return functionFromRoot.requiredParams.map((param: string) => {
+                      const isOnBehalfOf = param === 'onBehalfOf';
+                      const isReadOnly = isOnBehalfOf; // Make onBehalfOf read-only
+
+                      return (
+                        <div key={param} style={{ marginBottom: '12px' }}>
+                          <Label>
+                            {param.replace(/([A-Z])/g, ' $1').trim()}
+                            {isOnBehalfOf && ' (Auto-filled)'}
+                          </Label>
+                          <Input
+                            type="text"
+                            value={parameters[param] || ''}
+                            onChange={(e) => !isReadOnly && setParameters({...parameters, [param]: e.target.value})}
+                            placeholder={isOnBehalfOf ? 'Your wallet address' : `Enter ${param}`}
+                            disabled={submitting || isReadOnly}
+                            style={isReadOnly ? {
+                              backgroundColor: 'var(--color-surface)',
+                              opacity: 0.8,
+                              cursor: 'not-allowed'
+                            } : {}}
+                          />
+                          <HelpText>
+                            {isOnBehalfOf
+                              ? 'Auto-populated with your wallet address for AAVE protocol execution'
+                              : functionFromRoot.modifiableParams?.includes(param)
+                                ? 'Modifiable parameter - AlphaConsumers can change this'
+                                : 'Required parameter'}
+                          </HelpText>
+                        </div>
+                      );
+                    });
                   }
 
                   // Fallback to old format
