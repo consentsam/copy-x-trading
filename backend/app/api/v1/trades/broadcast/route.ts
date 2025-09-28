@@ -35,9 +35,11 @@ export async function POST(req: NextRequest) {
 
     const validation = BroadcastTradeSchema.safeParse(body);
     if (!validation.success) {
+      console.error('[BroadcastTrade] Validation errors:', validation.error.format());
+      console.error('[BroadcastTrade] Received body:', JSON.stringify(body, null, 2));
       return NextResponse.json({
         error: 'Invalid request data',
-        details: validation.error.errors,
+        details: validation.error.format(),
       }, { status: 400 });
     }
 
