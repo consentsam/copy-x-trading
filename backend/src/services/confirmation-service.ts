@@ -62,8 +62,31 @@ export class ConfirmationService {
     confirmations: ConfirmationResponse[];
     total: number;
   }> {
+    // First, resolve the wallet address to a consumer UUID
+    let consumerUuid = request.consumerId;
+
+    // Check if the input looks like an Ethereum address (starts with 0x and is 42 chars)
+    if (request.consumerId.startsWith('0x') && request.consumerId.length === 42) {
+      const consumerQuery = `
+        SELECT consumer_id
+        FROM alpha_consumers
+        WHERE LOWER(wallet_address) = LOWER($1)
+      `;
+      const consumerResult = await this.pool.query(consumerQuery, [request.consumerId]);
+
+      if (consumerResult.rows.length === 0) {
+        // Consumer not found, return empty result
+        return {
+          confirmations: [],
+          total: 0
+        };
+      }
+
+      consumerUuid = consumerResult.rows[0].consumer_id;
+    }
+
     const conditions: string[] = ['tc.alpha_consumer_id = $1'];
-    const params: any[] = [request.consumerId];
+    const params: any[] = [consumerUuid];
     let paramIndex = 2;
 
     // Add status filter if provided
@@ -107,7 +130,7 @@ export class ConfirmationService {
         tb.network,
         tb.correlation_id,
         tb.expires_at,
-        s.name as strategy_name,
+        s.strategy_name,
         ag.name as generator_name
       FROM protocol_trade_confirmations tc
       JOIN trade_broadcasts tb ON tc.trade_broadcast_id = tb.id
@@ -161,8 +184,27 @@ export class ConfirmationService {
       throw new Error('Confirmation not found');
     }
 
+    // Resolve consumer ID if wallet address provided
+    let consumerUuid = request.consumerId;
+
+    // Check if the input looks like an Ethereum address (starts with 0x and is 42 chars)
+    if (request.consumerId.startsWith('0x') && request.consumerId.length === 42) {
+      const consumerQuery = `
+        SELECT consumer_id
+        FROM alpha_consumers
+        WHERE LOWER(wallet_address) = LOWER($1)
+      `;
+      const consumerResult = await this.pool.query(consumerQuery, [request.consumerId]);
+
+      if (consumerResult.rows.length === 0) {
+        throw new Error('Consumer not found');
+      }
+
+      consumerUuid = consumerResult.rows[0].consumer_id;
+    }
+
     // Verify ownership
-    if (confirmation.alphaConsumerId !== request.consumerId) {
+    if (confirmation.alphaConsumerId !== consumerUuid) {
       throw new Error('Unauthorized to update this confirmation');
     }
 
@@ -173,7 +215,7 @@ export class ConfirmationService {
 
     // Get broadcast details for validation
     const broadcastQuery = `
-      SELECT tb.*, s.protocol, s.name as strategy_name
+      SELECT tb.*, s.protocol, s.strategy_name
       FROM trade_broadcasts tb
       JOIN strategies s ON tb.strategy_id = s.strategy_id
       WHERE tb.id = $1
