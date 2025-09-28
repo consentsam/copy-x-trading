@@ -36,7 +36,7 @@ export class TradeBroadcaster {
       const correlationId = this.generateCorrelationId();
       const broadcastId = uuidv4();
       const now = new Date();
-      const expiresAt = new Date(now.getTime() + (request.expiryMinutes || 5) * 60000);
+      const expiresAt = new Date(now.getTime() + (request.expiryMinutes || 5000) * 60000);
 
       // Get contract address from registry
       const registry = getProtocolRegistry(this.pool);

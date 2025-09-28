@@ -10,11 +10,16 @@ export const strategiesTable = pgTable("strategies", {
   strategyId: text("strategy_id").primaryKey().default(sql`gen_random_uuid()`),
   strategyName: varchar("strategy_name", { length: 255 }),
   strategyDescription: text("strategy_description"),
-  alphaGeneratorAddress: text("alpha_generator_address"),
+  protocol: varchar("protocol", { length: 50 }), // Added protocol column
   supportedProtocols: jsonb("supported_protocols"),
+  functions: jsonb("functions"), // Added functions column
   strategyJSON: jsonb("strategy_json"),
+  alphaGeneratorAddress: text("alpha_generator_address"),
+  alphaGeneratorId: text("alpha_generator_id"), // Added alpha_generator_id column
   subscriberCount: integer("subscriber_count").default(0).notNull(),
   totalVolume: numeric("total_volume", { precision: 78, scale: 0 }).default("0"),
+  successRate: numeric("success_rate", { precision: 5, scale: 2 }).default("0"), // Added success_rate
+  totalExecutions: integer("total_executions").default(0), // Added total_executions
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).default(sql`now()`).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).default(sql`now()`).notNull(),

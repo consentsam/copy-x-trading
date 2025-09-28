@@ -207,6 +207,13 @@ interface TradeExecutionModalProps {
       }>;
     };
     supportedProtocols?: string[];
+    functions?: Array<{
+      displayName: string;
+      functionName: string;
+      requiredParams: string[];
+      modifiableParams: string[];
+    }>;
+    protocol?: string;
   };
   onClose: () => void;
   onSubmit: () => void;
@@ -282,11 +289,17 @@ export default function TradeExecutionModal({
       const API_URL = process.env.NEXT_PUBLIC_ALPHAENGINE_API_URL || 'http://localhost:3001';
 
       // Find the selected function from the strategy's functions array
+      // First check new format at root level
+      const functionFromRoot = strategy?.functions?.find(
+        (f: any) => f.functionName === selectedFunction
+      );
+
+      // Fallback to old format
       const selectedFunctionData = strategy?.strategyJSON?.functions?.find(
         f => f.protocol.toUpperCase() === selectedProtocol.toUpperCase() && f.function === selectedFunction
       );
 
-      if (!selectedFunctionData) {
+      if (!functionFromRoot && !selectedFunctionData) {
         throw new Error('Function configuration not found');
       }
 
@@ -296,21 +309,21 @@ export default function TradeExecutionModal({
         generatorAddress: address,
         protocol: selectedProtocol,
         functionName: selectedFunction,
-        // Use the pre-defined parameters from the strategy or the user-entered ones
-        parameters: Object.keys(parameters).length > 0 ? parameters : selectedFunctionData.params,
+        // Use the user-entered parameters
+        parameters: parameters,
         gasEstimate: gasEstimate || "150000",
         expiryTime: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
         // Add functionABI - required by backend for strategy-based broadcasts
-        functionABI: selectedFunctionData.abi || {
+        functionABI: selectedFunctionData?.abi || {
           name: selectedFunction,
           type: 'function',
-          inputs: Object.keys(selectedFunctionData.params || {}).map(key => ({
+          inputs: Object.keys(selectedFunctionData?.params || parameters || {}).map(key => ({
             name: key,
             type: 'string'
           }))
         },
         // Add contractAddress if available
-        contractAddress: selectedFunctionData.contractAddress || undefined
+        contractAddress: selectedFunctionData?.contractAddress || undefined
       };
 
       await axios.post(`${API_URL}/api/v1/trades/broadcast`, payload, {
@@ -343,7 +356,9 @@ export default function TradeExecutionModal({
     return JSON.stringify({
       protocol: selectedProtocol,
       function: selectedFunction,
-      parameters: selectedFunctionData?.params || {}
+      parameters: parameters && Object.keys(parameters).length > 0
+        ? parameters
+        : selectedFunctionData?.params || {}
     }, null, 2);
   };
 
@@ -404,7 +419,15 @@ export default function TradeExecutionModal({
                 >
                   <option value="">Choose a function</option>
                   {(() => {
-                    // Get functions for the selected protocol
+                    // Check if functions exist at the root level (new format)
+                    if (strategy?.functions && Array.isArray(strategy.functions)) {
+                      return strategy.functions.map((func: any) => (
+                        <option key={func.functionName} value={func.functionName}>
+                          {func.displayName || func.functionName}
+                        </option>
+                      ));
+                    }
+                    // Get functions for the selected protocol (old format)
                     if (strategy?.strategyJSON?.functions) {
                       return strategy.strategyJSON.functions
                         .filter(f => f.protocol.toUpperCase() === selectedProtocol.toUpperCase())
@@ -434,7 +457,33 @@ export default function TradeExecutionModal({
               <FormGroup>
                 <Label>Function Parameters</Label>
                 {(() => {
-                  // Find the selected function configuration
+                  // First check new format at root level
+                  const functionFromRoot = strategy?.functions?.find(
+                    (f: any) => f.functionName === selectedFunction
+                  );
+
+                  if (functionFromRoot?.requiredParams && functionFromRoot.requiredParams.length > 0) {
+                    // Display input fields for each required parameter
+                    return functionFromRoot.requiredParams.map((param: string) => (
+                      <div key={param} style={{ marginBottom: '12px' }}>
+                        <Label>{param.replace(/([A-Z])/g, ' $1').trim()}</Label>
+                        <Input
+                          type="text"
+                          value={parameters[param] || ''}
+                          onChange={(e) => setParameters({...parameters, [param]: e.target.value})}
+                          placeholder={`Enter ${param}`}
+                          disabled={submitting}
+                        />
+                        <HelpText>
+                          {functionFromRoot.modifiableParams?.includes(param)
+                            ? 'Modifiable parameter - AlphaConsumers can change this'
+                            : 'Required parameter'}
+                        </HelpText>
+                      </div>
+                    ));
+                  }
+
+                  // Fallback to old format
                   const selectedFunctionData = strategy?.strategyJSON?.functions?.find(
                     f => f.protocol.toUpperCase() === selectedProtocol.toUpperCase() && f.function === selectedFunction
                   );

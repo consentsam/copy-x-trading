@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "buildCommand": "next build",
+  "outputDirectory": ".next",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "regions": [
+    "iad1"
+  ],
+  "env": {
+    "NEXT_PUBLIC_ALPHAENGINE_API_URL": "https://alphaengine-backend.vercel.app/api",
+    "NEXT_PUBLIC_CONTRACT_ADDRESS": "0x0000000000000000000000000000000000000000",
+    "NEXT_PUBLIC_RPC_URL": "https://sepolia.infura.io/v3/YOUR_INFURA_KEY",
+    "NEXT_PUBLIC_CHAIN_ID": "11155111"
+  }
+}
